@@ -1,9 +1,9 @@
-import { Database, RadioTower, SlidersHorizontal } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { fetchDatasets, fetchPrecomputed } from "./api/client";
-import { precomputedFixture } from "./api/fixtures";
+import { Database, RadioTower } from "lucide-react";
+import { useEffect, useState } from "react";
+import { fetchDatasets } from "./api/client";
 import { Tabs } from "./components/Tabs";
-import type { DatasetCatalog, PrecomputedResponse } from "./types";
+import { Overview } from "./pages/Overview";
+import type { DatasetCatalog } from "./types";
 
 type TabKey = "overview" | "lab";
 
@@ -15,24 +15,19 @@ const INITIAL_CATALOG: DatasetCatalog = {
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [catalog, setCatalog] = useState<DatasetCatalog>(INITIAL_CATALOG);
-  const [precomputed, setPrecomputed] = useState<PrecomputedResponse>(precomputedFixture);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
-      const [catalogPayload, precomputedPayload] = await Promise.all([
-        fetchDatasets(),
-        fetchPrecomputed(),
-      ]);
+      const catalogPayload = await fetchDatasets();
 
       if (cancelled) {
         return;
       }
 
       setCatalog(catalogPayload);
-      setPrecomputed(precomputedPayload);
       setIsLoading(false);
     }
 
@@ -43,30 +38,21 @@ export default function App() {
     };
   }, []);
 
-  const sampleProduct = precomputed.sample_product;
-  const metricSummary = useMemo(() => {
-    return precomputed.overview.summaries.map((row) => ({
-      ...row,
-      revenueLabel: row.cumulative_reward.toFixed(0),
-      regretLabel: row.cumulative_regret.toFixed(0),
-    }));
-  }, [precomputed]);
-
   return (
     <div className="app-shell">
-      <header className="hero">
-        <div className="hero-copy">
-          <p className="eyebrow">Retail pricing simulation scaffold</p>
-          <h1>Dynamic Retail Pricing Lab</h1>
+      <header className="app-header">
+        <div className="app-title-block">
+          <p className="eyebrow">Executive pricing analytics</p>
+          <h1>Dynamic Retail Pricing Dashboard</h1>
           <p className="hero-text">
-            Base shell for the React dashboard, wired to FastAPI when available and falling back
-            to compact local fixtures during frontend-only work.
+            Quiet readout of precomputed bandit behavior for retail pricing experiments, aimed at
+            recruiter walkthroughs and technical reviewers.
           </p>
         </div>
-        <div className="hero-meta">
+        <div className="header-meta">
           <div className="meta-chip">
             <Database size={16} aria-hidden="true" />
-            <span>{catalog.products.length || 1} sample product</span>
+            <span>{catalog.products.length || 1} catalog product</span>
           </div>
           <div className="meta-chip">
             <RadioTower size={16} aria-hidden="true" />
@@ -75,99 +61,29 @@ export default function App() {
         </div>
       </header>
 
-      <main className="content">
+      <main className="content-shell">
         <Tabs activeTab={activeTab} onChange={setActiveTab} />
-
-        <section className="panel-grid">
-          <article className="panel panel-primary">
-            <div className="panel-heading">
-              <h2>{activeTab === "overview" ? "Overview scaffold" : "Lab scaffold"}</h2>
-              <span className="status-pill">{isLoading ? "Loading" : "Ready"}</span>
+        {activeTab === "overview" ? (
+          <Overview catalog={catalog} />
+        ) : (
+          <section className="lab-placeholder">
+            <div className="dashboard-panel">
+              <div className="panel-topline">
+                <div>
+                  <p className="panel-kicker">Lab route intact</p>
+                  <h2>Interactive experimentation stays in Task 9</h2>
+                </div>
+                <span className={isLoading ? "status-badge is-loading" : "status-badge"}>
+                  {isLoading ? "Loading datasets" : catalog.source}
+                </span>
+              </div>
+              <p className="section-intro">
+                The tab remains wired so the scaffold can expand into controls and reruns later.
+                This task only implements the Overview surface.
+              </p>
             </div>
-
-            {activeTab === "overview" ? (
-              <div className="stack">
-                <p className="section-copy">
-                  Task 7 stops at the app shell. The next task will replace this placeholder with
-                  KPI cards, charts, and comparison tables.
-                </p>
-                <div className="stat-row">
-                  {metricSummary.map((row) => (
-                    <div key={row.algorithm} className="stat-block">
-                      <span className="stat-label">{row.algorithm}</span>
-                      <strong>{row.revenueLabel}</strong>
-                      <span>regret {row.regretLabel}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="stack">
-                <p className="section-copy">
-                  Task 9 will add the interactive controls and result charts. The scaffold already
-                  exposes typed request and response helpers for that work.
-                </p>
-                <div className="lab-defaults">
-                  <div>
-                    <span className="detail-label">Environment</span>
-                    <strong>{precomputed.lab_defaults.environment}</strong>
-                  </div>
-                  <div>
-                    <span className="detail-label">Horizon</span>
-                    <strong>{precomputed.lab_defaults.horizon}</strong>
-                  </div>
-                  <div>
-                    <span className="detail-label">Algorithms</span>
-                    <strong>{precomputed.lab_defaults.algorithms.join(", ")}</strong>
-                  </div>
-                </div>
-              </div>
-            )}
-          </article>
-
-          <article className="panel">
-            <div className="panel-heading">
-              <h2>Fixture and API data</h2>
-              <span className="source-badge">{precomputed.source}</span>
-            </div>
-            <div className="stack">
-              <div className="detail-grid">
-                <div>
-                  <span className="detail-label">Sample product</span>
-                  <strong>{sampleProduct.name}</strong>
-                </div>
-                <div>
-                  <span className="detail-label">Dataset source</span>
-                  <strong>{catalog.source}</strong>
-                </div>
-                <div>
-                  <span className="detail-label">Observation count</span>
-                  <strong>{sampleProduct.observations}</strong>
-                </div>
-                <div>
-                  <span className="detail-label">Price arms</span>
-                  <strong>{sampleProduct.price_arms.join(", ")}</strong>
-                </div>
-              </div>
-              <div className="trace-preview">
-                <div className="trace-header">
-                  <SlidersHorizontal size={16} aria-hidden="true" />
-                  <span>Trace preview</span>
-                </div>
-                <ul>
-                  {precomputed.overview.traces.slice(0, 4).map((trace) => (
-                    <li key={`${trace.algorithm}-${trace.step}`}>
-                      <span>{trace.algorithm}</span>
-                      <span>step {trace.step}</span>
-                      <span>arm {trace.arm}</span>
-                      <span>reward {trace.reward}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </article>
-        </section>
+          </section>
+        )}
       </main>
     </div>
   );
