@@ -20,4 +20,4 @@ backend/experiments/results/
 
 .env
 .env.*
-!.env.example
+!.env.examplebackend/pytest-cache-files-*/
