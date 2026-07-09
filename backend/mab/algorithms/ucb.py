@@ -42,11 +42,19 @@ class SlidingWindowUCB:
     name = "sliding_window_ucb"
 
     def __init__(self, arms: list[Arm], seed: int = 0, window_size: int = 50, **_: object) -> None:
-        if window_size <= 0:
+        if isinstance(window_size, bool):
+            raise ValueError("window_size must be an integer")
+        try:
+            coerced_window_size = int(window_size)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("window_size must be an integer") from exc
+        if coerced_window_size != window_size:
+            raise ValueError("window_size must be an integer")
+        if coerced_window_size <= 0:
             raise ValueError("window_size must be positive")
         self.arms = list(arms)
         self._rng = random.Random(seed)
-        self._window_size = int(window_size)
+        self._window_size = coerced_window_size
         self._events: deque[tuple[Arm, float]] = deque()
         self._counts = {arm: 0 for arm in self.arms}
         self._values = {arm: 0.0 for arm in self.arms}
@@ -88,3 +96,4 @@ class SlidingWindowUCB:
             self._total_pulls,
             {"window_size": float(self._window_size)},
         )
+

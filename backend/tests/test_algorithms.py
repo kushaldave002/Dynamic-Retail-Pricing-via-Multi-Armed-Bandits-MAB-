@@ -57,3 +57,13 @@ def test_oracle_uses_environment_best_arm():
     policy = make_policy("oracle", arms=[1.0, 2.0], seed=1, best_arm=2.0)
 
     assert policy.select_arm() == 2.0
+
+def test_oracle_rejects_best_arm_not_in_arms():
+    with pytest.raises(ValueError, match="best_arm must be one of arms"):
+        make_policy("oracle", arms=[1.0, 2.0], seed=1, best_arm=3.0)
+
+
+def test_sliding_window_ucb_rejects_non_integral_window_size():
+    with pytest.raises(ValueError, match="window_size must be an integer"):
+        make_policy("sliding_window_ucb", arms=[1.0, 2.0], seed=3, window_size=2.5)
+

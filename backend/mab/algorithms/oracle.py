@@ -10,6 +10,8 @@ class OraclePolicy:
         if best_arm is None:
             raise ValueError("best_arm is required")
         self.arms = list(arms)
+        if best_arm not in self.arms:
+            raise ValueError("best_arm must be one of arms")
         self.best_arm = best_arm
         self._counts = {arm: 0 for arm in self.arms}
         self._values = {arm: 0.0 for arm in self.arms}
@@ -27,3 +29,4 @@ class OraclePolicy:
 
     def state(self) -> BanditState:
         return BanditState(self.name, dict(self._counts), dict(self._values), self._total_pulls)
+
