@@ -1,0 +1,268 @@
+:root {
+  font-family: Inter, "Segoe UI", sans-serif;
+  color: #e8ecf3;
+  background: #10151d;
+  line-height: 1.5;
+  font-weight: 400;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    radial-gradient(circle at top left, rgba(71, 128, 255, 0.18), transparent 28%),
+    linear-gradient(180deg, #10151d 0%, #0b1017 100%);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.hero,
+.content {
+  width: min(1120px, calc(100vw - 32px));
+  margin: 0 auto;
+}
+
+.hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 56px 0 28px;
+}
+
+.hero-copy {
+  max-width: 720px;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: #8fb4ff;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: clamp(2.2rem, 4vw, 3.6rem);
+  line-height: 1.05;
+}
+
+.hero-text {
+  margin: 16px 0 0;
+  max-width: 620px;
+  color: #b8c1d1;
+}
+
+.hero-meta {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 240px;
+}
+
+.meta-chip,
+.status-pill,
+.source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(151, 169, 196, 0.24);
+  background: rgba(18, 24, 35, 0.72);
+  border-radius: 999px;
+  padding: 10px 14px;
+  color: #d7dceb;
+}
+
+.content {
+  padding-bottom: 48px;
+}
+
+.tab-list {
+  display: inline-grid;
+  grid-auto-flow: column;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 12px;
+  background: rgba(18, 24, 35, 0.86);
+  border: 1px solid rgba(151, 169, 196, 0.16);
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #b8c1d1;
+  background: transparent;
+}
+
+.tab.is-active {
+  background: #f3f6fb;
+  color: #10151d;
+}
+
+.tab-icon {
+  display: inline-flex;
+}
+
+.panel-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.9fr);
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.panel {
+  padding: 20px;
+  border-radius: 8px;
+  background: rgba(18, 24, 35, 0.9);
+  border: 1px solid rgba(151, 169, 196, 0.16);
+  min-height: 280px;
+}
+
+.panel-primary {
+  background:
+    linear-gradient(180deg, rgba(26, 35, 52, 0.96), rgba(16, 21, 29, 0.96));
+}
+
+.panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.panel h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.stack {
+  display: grid;
+  gap: 18px;
+}
+
+.section-copy {
+  margin: 0;
+  color: #b8c1d1;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.stat-block,
+.lab-defaults,
+.detail-grid,
+.trace-preview {
+  border: 1px solid rgba(151, 169, 196, 0.12);
+  border-radius: 8px;
+  background: rgba(9, 13, 20, 0.55);
+}
+
+.stat-block {
+  display: grid;
+  gap: 4px;
+  padding: 16px;
+}
+
+.stat-label,
+.detail-label {
+  color: #8f9bb0;
+  font-size: 0.82rem;
+}
+
+.lab-defaults,
+.detail-grid {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.lab-defaults {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.trace-preview {
+  padding: 16px;
+}
+
+.trace-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: #b8c1d1;
+}
+
+.trace-preview ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.trace-preview li {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  color: #d7dceb;
+  font-size: 0.92rem;
+}
+
+@media (max-width: 900px) {
+  .hero {
+    flex-direction: column;
+    padding-top: 40px;
+  }
+
+  .panel-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero,
+  .content {
+    width: min(100vw - 20px, 1120px);
+  }
+
+  .detail-grid,
+  .trace-preview li {
+    grid-template-columns: 1fr;
+  }
+
+  .tab-list {
+    width: 100%;
+    grid-auto-flow: row;
+  }
+}

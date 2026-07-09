@@ -13,6 +13,7 @@ node_modules/
 dist/
 frontend/dist/
 frontend/.vite/
+frontend/tsconfig.tsbuildinfo
 
 data/raw/
 data/processed/
@@ -22,3 +23,4 @@ backend/pytest-cache-files-*/
 .env
 .env.*
 !.env.example
+
