@@ -29,11 +29,11 @@ export async function fetchDatasets(): Promise<DatasetCatalog> {
 }
 
 export async function fetchPrecomputed(): Promise<PrecomputedResponse> {
-  try {
-    return await request<PrecomputedResponse>("/experiments/precomputed");
-  } catch {
-    return precomputedFixture;
-  }
+  return request<PrecomputedResponse>("/experiments/precomputed");
+}
+
+export async function fetchPrecomputedFixture(): Promise<PrecomputedResponse> {
+  return precomputedFixture;
 }
 
 export async function runExperiment(payload: ExperimentRequest): Promise<ExperimentResponse> {

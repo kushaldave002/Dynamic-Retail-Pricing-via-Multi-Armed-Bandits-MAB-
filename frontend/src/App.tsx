@@ -52,7 +52,7 @@ export default function App() {
         <div className="header-meta">
           <div className="meta-chip">
             <Database size={16} aria-hidden="true" />
-            <span>{catalog.products.length || 1} catalog product</span>
+            <span>{isLoading ? "Loading catalog" : `${catalog.products.length} catalog product${catalog.products.length === 1 ? "" : "s"}`}</span>
           </div>
           <div className="meta-chip">
             <RadioTower size={16} aria-hidden="true" />

@@ -103,7 +103,7 @@ export function Overview({ catalog }: OverviewProps) {
     };
   }, [summaries]);
 
-  const datasetCount = catalog.products.length || 1;
+  const datasetCount = catalog.source === "loading" ? "Loading catalog" : catalog.products.length;
   const priceArmRange = `${Math.min(...sampleProduct.price_arms).toFixed(0)} to ${Math.max(
     ...sampleProduct.price_arms,
   ).toFixed(0)}`;
@@ -184,7 +184,7 @@ export function Overview({ catalog }: OverviewProps) {
               <p className="panel-kicker">Trace behavior</p>
               <h3>Revenue and regret over decision steps</h3>
             </div>
-            <div className="segmented-control" role="tablist" aria-label="Chart metric">
+            <div className="segmented-control" aria-label="Chart metric">
               <button
                 type="button"
                 className={metric === "cumulative_reward" ? "segment is-active" : "segment"}
