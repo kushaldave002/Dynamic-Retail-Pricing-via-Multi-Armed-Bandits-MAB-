@@ -611,3 +611,29 @@ select {
 
 
 
+
+.status-badge.is-warning {
+  color: #8d1c1c;
+  border-color: #f3c1c1;
+  background: #fff2f2;
+}
+
+.control-hint {
+  color: #5f6b7a;
+  font-size: 0.82rem;
+}
+
+.settings-warning {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 8px;
+  border: 1px solid #f2d39a;
+  background: #fff7e6;
+  color: #9a6700;
+}
+
+.settings-warning p {
+  margin: 0;
+}

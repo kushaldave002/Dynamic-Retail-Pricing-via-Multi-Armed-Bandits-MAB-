@@ -37,12 +37,12 @@ export async function fetchPrecomputedFixture(): Promise<PrecomputedResponse> {
 }
 
 export async function runExperiment(payload: ExperimentRequest): Promise<ExperimentResponse> {
-  try {
-    return await request<ExperimentResponse>("/experiments/run", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-  } catch {
-    return buildExperimentFixture(payload);
-  }
+  return request<ExperimentResponse>("/experiments/run", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function runExperimentFixture(payload: ExperimentRequest): Promise<ExperimentResponse> {
+  return buildExperimentFixture(payload);
 }

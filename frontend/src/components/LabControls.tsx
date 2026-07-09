@@ -1,13 +1,10 @@
-import type { AlgorithmName, EnvironmentName } from "../types";
-
-export type LabSettings = {
-  environment: EnvironmentName;
-  horizon: number;
-  seed: number;
-  algorithms: AlgorithmName[];
-  epsilon: number;
-  windowSize: number;
-};
+import type { AlgorithmName } from "../types";
+import {
+  LAB_HORIZON_MAX,
+  LAB_HORIZON_MIN,
+  type LabSettings,
+  normalizeLabSettings,
+} from "../lab";
 
 type LabControlsProps = {
   settings: LabSettings;
@@ -31,21 +28,18 @@ const ALGORITHM_OPTIONS: Array<{ value: AlgorithmName; label: string; detail: st
   },
 ];
 
-function updateNumber(
-  settings: LabSettings,
-  key: "horizon" | "seed" | "windowSize",
-  value: string,
-): LabSettings {
+function updateNumber(settings: LabSettings, key: "horizon" | "seed" | "windowSize", value: string) {
   const parsed = Number(value);
-
-  return {
+  const nextSettings = {
     ...settings,
-    [key]: Number.isFinite(parsed) ? parsed : 0,
+    [key]: Number.isFinite(parsed) ? parsed : settings[key],
   };
+
+  return normalizeLabSettings(nextSettings);
 }
 
 export function LabControls({ settings, onChange, onRun, isRunning }: LabControlsProps) {
-  const isRunDisabled = isRunning || settings.algorithms.length === 0 || settings.horizon <= 0;
+  const isRunDisabled = isRunning || settings.algorithms.length === 0;
 
   return (
     <section className="dashboard-panel lab-controls-panel" aria-label="Lab controls">
@@ -59,13 +53,12 @@ export function LabControls({ settings, onChange, onRun, isRunning }: LabControl
       <div className="lab-controls-grid">
         <fieldset className="control-group">
           <legend>Environment</legend>
-          <div className="segmented-control" role="radiogroup" aria-label="Environment">
+          <div className="segmented-control" aria-label="Environment selection">
             {(["empirical", "elasticity"] as const).map((environment) => (
               <button
                 key={environment}
                 type="button"
-                role="radio"
-                aria-checked={settings.environment === environment}
+                aria-pressed={settings.environment === environment}
                 className={
                   settings.environment === environment ? "segment is-active" : "segment"
                 }
@@ -81,11 +74,13 @@ export function LabControls({ settings, onChange, onRun, isRunning }: LabControl
           <span>Horizon</span>
           <input
             type="number"
-            min={1}
+            min={LAB_HORIZON_MIN}
+            max={LAB_HORIZON_MAX}
             step={1}
             value={settings.horizon}
             onChange={(event) => onChange(updateNumber(settings, "horizon", event.target.value))}
           />
+          <small className="control-hint">{LAB_HORIZON_MIN} to {LAB_HORIZON_MAX} steps</small>
         </label>
 
         <label className="control-field">
@@ -151,7 +146,7 @@ export function LabControls({ settings, onChange, onRun, isRunning }: LabControl
                       ? [...settings.algorithms, algorithm.value]
                       : settings.algorithms.filter((value) => value !== algorithm.value);
 
-                    onChange({ ...settings, algorithms });
+                    onChange(normalizeLabSettings({ ...settings, algorithms }));
                   }}
                 />
                 <span className="algorithm-copy">
@@ -166,7 +161,7 @@ export function LabControls({ settings, onChange, onRun, isRunning }: LabControl
 
       <div className="lab-controls-footer">
         <p className="panel-note">
-          Runs use the shared API client and fall back to fixtures if the backend is unavailable.
+          Runs call the shared API client directly. Update settings, then run to refresh results.
         </p>
         <button
           type="button"

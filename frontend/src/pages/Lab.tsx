@@ -1,65 +1,47 @@
 import { AlertCircle, FlaskConical, Loader2, Sparkles, Trophy } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { runExperiment } from "../api/client";
 import { ArmShareChart } from "../charts/ArmShareChart";
 import { RevenueRegretChart } from "../charts/RevenueRegretChart";
 import { RewardTrendChart } from "../charts/RewardTrendChart";
 import { KpiCard } from "../components/KpiCard";
-import { LabControls, type LabSettings } from "../components/LabControls";
-import type { DatasetCatalog, ExperimentRequest, ExperimentResponse, SummaryRow } from "../types";
+import { LabControls } from "../components/LabControls";
+import {
+  areLabSettingsEqual,
+  buildExperimentRequest,
+  DEFAULT_LAB_SETTINGS,
+  formatAlgorithmName,
+  type LabSettings,
+  normalizeLabSettings,
+} from "../lab";
+import type { DatasetCatalog, ExperimentResponse, SummaryRow } from "../types";
 
 type LabProps = {
   catalog: DatasetCatalog;
 };
 
-const DEFAULT_SETTINGS: LabSettings = {
-  environment: "elasticity",
-  horizon: 200,
-  seed: 42,
-  algorithms: ["epsilon_greedy", "ucb1", "sliding_window_ucb", "thompson_sampling"],
-  epsilon: 0.1,
-  windowSize: 50,
-};
-
-function formatAlgorithmName(algorithm: string) {
-  return algorithm
-    .split("_")
-    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-    .join(" ");
-}
-
 function findBaseline(summary: SummaryRow[]) {
   return summary.find((row) => row.algorithm === "epsilon_greedy") ?? summary[0];
 }
 
-function buildRequest(settings: LabSettings): ExperimentRequest {
-  return {
-    environment: settings.environment,
-    horizon: settings.horizon,
-    seed: settings.seed,
-    algorithms: settings.algorithms,
-    parameters: {
-      epsilon_greedy: { epsilon: settings.epsilon },
-      sliding_window_ucb: { window_size: settings.windowSize },
-      ucb1: {},
-      thompson_sampling: {},
-    },
-  };
-}
-
 export function Lab({ catalog }: LabProps) {
-  const [settings, setSettings] = useState<LabSettings>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<LabSettings>(DEFAULT_LAB_SETTINGS);
   const [result, setResult] = useState<ExperimentResponse | null>(null);
+  const [lastRunSettings, setLastRunSettings] = useState<LabSettings | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const executeRun = useCallback(async (nextSettings: LabSettings) => {
+    const normalizedSettings = normalizeLabSettings(nextSettings);
+
     setIsRunning(true);
     setErrorMessage(null);
 
     try {
-      const payload = await runExperiment(buildRequest(nextSettings));
+      const payload = await runExperiment(buildExperimentRequest(normalizedSettings));
       setResult(payload);
+      setLastRunSettings(normalizedSettings);
+      setSettings(normalizedSettings);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Unable to run experiment.");
     } finally {
@@ -67,15 +49,17 @@ export function Lab({ catalog }: LabProps) {
     }
   }, []);
 
-  useEffect(() => {
-    void executeRun(DEFAULT_SETTINGS);
-  }, [executeRun]);
-
   const orderedSummary = useMemo(() => {
     return result
       ? [...result.summary].sort((left, right) => right.cumulative_reward - left.cumulative_reward)
       : [];
   }, [result]);
+  const normalizedSettings = useMemo(() => normalizeLabSettings(settings), [settings]);
+  const displayedSettings = lastRunSettings ?? DEFAULT_LAB_SETTINGS;
+  const hasSettingsChanged =
+    result !== null &&
+    lastRunSettings !== null &&
+    !areLabSettingsEqual(normalizedSettings, lastRunSettings);
 
   const winner = orderedSummary[0];
   const baseline = orderedSummary.length > 0 ? findBaseline(orderedSummary) : null;
@@ -92,9 +76,9 @@ export function Lab({ catalog }: LabProps) {
     <section className="lab-page">
       <div className="lab-grid">
         <LabControls
-          settings={settings}
-          onChange={setSettings}
-          onRun={() => void executeRun(settings)}
+          settings={normalizedSettings}
+          onChange={(nextSettings) => setSettings(normalizeLabSettings(nextSettings))}
+          onRun={() => void executeRun(normalizedSettings)}
           isRunning={isRunning}
         />
 
@@ -113,13 +97,38 @@ export function Lab({ catalog }: LabProps) {
             <Loader2 size={18} className="loading-spinner" aria-hidden="true" />
             <div>
               <h2>Running experiment</h2>
-              <p>Submitting the default Lab configuration and waiting for the first response.</p>
+              <p>Submitting the current Lab configuration and waiting for the response.</p>
+            </div>
+          </section>
+        ) : null}
+
+        {!errorMessage && !isRunning && result === null ? (
+          <section className="overview-loading-state" aria-live="polite">
+            <FlaskConical size={18} aria-hidden="true" />
+            <div>
+              <h2>Ready to run</h2>
+              <p>
+                Start with the default {DEFAULT_LAB_SETTINGS.environment} setup: horizon{" "}
+                {DEFAULT_LAB_SETTINGS.horizon}, seed {DEFAULT_LAB_SETTINGS.seed}, epsilon{" "}
+                {DEFAULT_LAB_SETTINGS.epsilon.toFixed(2)}, and sliding window{" "}
+                {DEFAULT_LAB_SETTINGS.windowSize}.
+              </p>
             </div>
           </section>
         ) : null}
 
         {result ? (
           <>
+            {hasSettingsChanged ? (
+              <section className="settings-warning" aria-live="polite">
+                <AlertCircle size={18} aria-hidden="true" />
+                <p>
+                  Settings changed since the last successful run. Run again to refresh the summary
+                  and charts.
+                </p>
+              </section>
+            ) : null}
+
             <div className="kpi-strip">
               <KpiCard
                 label="Winner"
@@ -145,13 +154,15 @@ export function Lab({ catalog }: LabProps) {
                 label="Regret reduction"
                 value={baseline ? regretReduction.toFixed(0) : "0"}
                 detail={
-                  baseline ? `Vs ${formatAlgorithmName(baseline.algorithm)}` : "Baseline unavailable"
+                  baseline
+                    ? `Vs ${formatAlgorithmName(baseline.algorithm)}`
+                    : "Baseline unavailable"
                 }
                 tone="regret"
               />
               <KpiCard
                 label="Selected algorithms"
-                value={String(settings.algorithms.length)}
+                value={String(displayedSettings.algorithms.length)}
                 detail={`${result.sample_product.price_arms.length} price arms`}
                 tone="exploration"
               />
@@ -204,8 +215,16 @@ export function Lab({ catalog }: LabProps) {
                     <p className="panel-kicker">Winner summary</p>
                     <h3>What changed in this run</h3>
                   </div>
-                  <span className={isRunning ? "status-badge is-loading" : "status-badge"}>
-                    {isRunning ? "Refreshing" : result.source}
+                  <span
+                    className={
+                      isRunning
+                        ? "status-badge is-loading"
+                        : hasSettingsChanged
+                          ? "status-badge is-warning"
+                          : "status-badge"
+                    }
+                  >
+                    {isRunning ? "Refreshing" : hasSettingsChanged ? "Run again" : result.source}
                   </span>
                 </div>
                 <div className="narrative-list">
@@ -214,16 +233,16 @@ export function Lab({ catalog }: LabProps) {
                     <p>
                       <strong>{winner ? formatAlgorithmName(winner.algorithm) : "No winner"}</strong>
                       {winner
-                        ? ` leads the ${settings.environment} run on ${result.sample_product.name}, finishing on the $${winner.best_arm.toFixed(2)} arm.`
+                        ? ` leads the ${displayedSettings.environment} run on ${result.sample_product.name}, finishing on the $${winner.best_arm.toFixed(2)} arm.`
                         : " No summary rows were returned for this run."}
                     </p>
                   </div>
                   <div className="narrative-item">
                     <FlaskConical size={18} aria-hidden="true" />
                     <p>
-                      Horizon {settings.horizon}, seed {settings.seed}, epsilon{" "}
-                      {settings.epsilon.toFixed(2)}, and sliding window {settings.windowSize} shape
-                      this replay.
+                      Horizon {displayedSettings.horizon}, seed {displayedSettings.seed}, epsilon{" "}
+                      {displayedSettings.epsilon.toFixed(2)}, and sliding window{" "}
+                      {displayedSettings.windowSize} shaped this replay.
                     </p>
                   </div>
                   <div className="narrative-item">
