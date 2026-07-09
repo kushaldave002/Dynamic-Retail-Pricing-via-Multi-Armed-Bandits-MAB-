@@ -84,6 +84,8 @@
 Create `.gitignore`:
 
 ```gitignore
+.worktrees/
+.superpowers/
 __pycache__/
 *.py[cod]
 .pytest_cache/
@@ -163,7 +165,7 @@ cd backend
 python -m pytest
 ```
 
-Expected: `no tests ran` or equivalent empty-suite success once pytest discovers package.
+Expected: pytest exits with code `5` and prints `no tests ran`, which is acceptable before test files exist.
 
 - [ ] **Step 6: Commit scaffold**
 
