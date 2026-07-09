@@ -40,6 +40,9 @@ def build_sample_payload(
                 "id": product["id"],
                 "name": product["name"],
                 "observations": product["observations"],
+                "price_arms": product["price_arms"],
+                "empirical_rewards": product["empirical_rewards"],
+                "elasticity_model": product["elasticity_model"],
             }
         )
         result_products.append(product)
@@ -141,6 +144,17 @@ def _product_payloads(frame):
             "id": stock_code,
             "name": str(reference_row["description"]),
             "observations": observations,
+            "price_arms": price_arms,
+            "empirical_rewards": [
+                {"arm": _round_float(arm), "rewards": rewards}
+                for arm, rewards in sorted(price_rewards.items())
+            ],
+            "elasticity_model": {
+                "base_price": _round_float(base_price),
+                "base_demand": _round_float(max(1.0, mean_quantity)),
+                "elasticity": _round_float(elasticity),
+                "noise_scale": 0.05,
+            },
             "environments": {
                 "empirical": _serialize_result(empirical_result),
                 "elasticity": _serialize_result(elasticity_result),
@@ -178,3 +192,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

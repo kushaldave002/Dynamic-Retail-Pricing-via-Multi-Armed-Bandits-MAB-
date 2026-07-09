@@ -151,6 +151,8 @@ def test_build_sample_payload_uses_local_raw_data_when_provided():
 
         assert catalog["source"] == "uci_online_retail_local"
         assert catalog["products"][0]["id"] == "R-001"
+        assert catalog["products"][0]["empirical_rewards"]
+        assert catalog["products"][0]["elasticity_model"]["base_price"] > 0
         assert results["products"][0]["id"] == "R-001"
         assert results["products"][0]["name"] == "Real Mug"
     finally:
@@ -183,9 +185,12 @@ def test_build_sample_payload_falls_back_to_synthetic_when_download_fails(monkey
 
         assert catalog["source"] == "synthetic_fallback"
         assert catalog["products"]
+        assert catalog["products"][0]["empirical_rewards"]
+        assert catalog["products"][0]["elasticity_model"]["noise_scale"] == 0.05
         assert results["products"]
         assert results["products"][0]["id"].startswith("SYN-")
         assert {"empirical", "elasticity"} <= set(results["products"][0]["environments"])
     finally:
         shutil.rmtree(output_dir, ignore_errors=True)
         shutil.rmtree(raw_dir, ignore_errors=True)
+

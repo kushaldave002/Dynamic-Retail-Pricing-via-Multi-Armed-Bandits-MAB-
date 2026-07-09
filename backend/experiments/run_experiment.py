@@ -26,15 +26,16 @@ _LAB_DEFAULT_ALGORITHMS = [
 
 _DEFAULT_EPSILON = 0.1
 _DEFAULT_WINDOW_SIZE = 50
+_CATALOG_PATH = Path(__file__).resolve().parents[2] / "data" / "samples" / "catalog.json"
 
 
 def build_precomputed_results(seed: int = 42, horizon: int = 200) -> dict[str, object]:
     sample_catalog = _load_sample_catalog()
     sample_source = str(sample_catalog.get("source", "synthetic_fallback"))
-    sample_product = sample_catalog["products"][0] if sample_catalog.get("products") else _default_sample_product()
+    sample_product = _select_sample_product(sample_catalog)
 
-    empirical_environment = _build_empirical_environment(seed=seed)
-    elasticity_environment = _build_elasticity_environment(seed=seed)
+    empirical_environment = _build_empirical_environment(sample_product, seed=seed)
+    elasticity_environment = _build_elasticity_environment(sample_product, seed=seed)
 
     empirical_result = run_simulation(
         environment=empirical_environment,
@@ -57,12 +58,17 @@ def build_precomputed_results(seed: int = 42, horizon: int = 200) -> dict[str, o
         },
     )
 
+    reward_row_count = sum(len(rewards) for rewards in _rewards_by_arm(sample_product).values())
+
     return {
         "source": sample_source,
         "sample_product": {
             "id": sample_product["id"],
             "name": sample_product["name"],
             "observations": sample_product["observations"],
+            "price_arms": sample_product["price_arms"],
+            "reward_row_count": reward_row_count,
+            "environment_source": sample_product["environment_source"],
         },
         "overview": {
             "summaries": [
@@ -104,49 +110,112 @@ def write_results(output: Path, payload: dict[str, object]) -> None:
     output.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
-def _build_empirical_environment(*, seed: int) -> EmpiricalArmEnvironment:
-    return EmpiricalArmEnvironment(
-        rewards_by_arm={
-            35.1: [245.7, 261.0, 271.8, 255.6],
-            37.05: [296.4, 289.8, 282.6, 274.2],
-            39.0: [273.0, 327.6, 300.3, 286.65],
-            40.95: [327.6, 300.3, 245.7, 286.65],
-            42.9: [257.4, 300.3, 343.2, 214.5],
-        },
-        seed=seed,
-    )
+def _build_empirical_environment(sample_product: dict[str, object], *, seed: int) -> EmpiricalArmEnvironment:
+    return EmpiricalArmEnvironment(rewards_by_arm=_rewards_by_arm(sample_product), seed=seed)
 
 
-def _build_elasticity_environment(*, seed: int) -> ElasticityEnvironment:
+def _build_elasticity_environment(sample_product: dict[str, object], *, seed: int) -> ElasticityEnvironment:
+    model = sample_product["elasticity_model"]
     return ElasticityEnvironment(
-        base_price=37.05,
-        base_demand=8.5,
-        elasticity=-1.05,
-        arms=[35.1, 37.05, 39.0, 40.95, 42.9],
+        base_price=float(model["base_price"]),
+        base_demand=float(model["base_demand"]),
+        elasticity=float(model["elasticity"]),
+        arms=_coerce_arms(sample_product),
         seed=seed,
-        noise_scale=0.05,
+        noise_scale=float(model.get("noise_scale", 0.05)),
     )
 
 
 def _load_sample_catalog() -> dict[str, object]:
-    catalog_path = Path(__file__).resolve().parents[2] / "data" / "samples" / "catalog.json"
-    if not catalog_path.exists():
-        return {
-            "source": "synthetic_fallback",
-            "products": [_default_sample_product()],
-        }
+    if not _CATALOG_PATH.exists():
+        return _default_sample_catalog()
 
-    payload = json.loads(catalog_path.read_text(encoding="utf-8"))
+    payload = json.loads(_CATALOG_PATH.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
-        return {
-            "source": "synthetic_fallback",
-            "products": [_default_sample_product()],
-        }
+        return _default_sample_catalog()
 
-    products = payload.get("products")
-    if not isinstance(products, list) or not products:
-        payload["products"] = [_default_sample_product()]
-    return payload
+    return {
+        "source": payload.get("source", "synthetic_fallback"),
+        "products": payload.get("products", []),
+    }
+
+
+def _select_sample_product(sample_catalog: dict[str, object]) -> dict[str, object]:
+    products = sample_catalog.get("products")
+    if isinstance(products, list):
+        for product in products:
+            normalized = _normalize_sample_product(product)
+            if normalized is not None:
+                return normalized
+    return _default_sample_product()
+
+
+def _normalize_sample_product(product: object) -> dict[str, object] | None:
+    if not isinstance(product, dict):
+        return None
+
+    try:
+        price_arms = _coerce_arms(product)
+        empirical_rewards = [
+            {"arm": arm, "rewards": rewards}
+            for arm, rewards in sorted(_rewards_by_arm(product).items())
+        ]
+        model = product["elasticity_model"]
+        normalized_model = {
+            "base_price": round(float(model["base_price"]), 3),
+            "base_demand": round(float(model["base_demand"]), 3),
+            "elasticity": round(float(model["elasticity"]), 3),
+            "noise_scale": round(float(model.get("noise_scale", 0.05)), 3),
+        }
+    except (KeyError, TypeError, ValueError):
+        return None
+
+    return {
+        "id": str(product.get("id", "SYN-005")),
+        "name": str(product.get("name", "Wool Throw")),
+        "observations": int(product.get("observations", sum(len(row["rewards"]) for row in empirical_rewards))),
+        "price_arms": price_arms,
+        "empirical_rewards": empirical_rewards,
+        "elasticity_model": normalized_model,
+        "environment_source": "sample_catalog",
+    }
+
+
+def _coerce_arms(sample_product: dict[str, object]) -> list[float]:
+    arms = sample_product.get("price_arms")
+    if isinstance(arms, list) and arms:
+        return [round(float(arm), 3) for arm in arms]
+
+    reward_rows = sample_product.get("empirical_rewards")
+    if isinstance(reward_rows, list) and reward_rows:
+        return [round(float(row["arm"]), 3) for row in reward_rows]
+
+    raise ValueError("sample product is missing price arms")
+
+
+def _rewards_by_arm(sample_product: dict[str, object]) -> dict[float, list[float]]:
+    reward_rows = sample_product.get("empirical_rewards")
+    if not isinstance(reward_rows, list) or not reward_rows:
+        raise ValueError("sample product is missing empirical reward rows")
+
+    rewards_by_arm: dict[float, list[float]] = {}
+    for row in reward_rows:
+        if not isinstance(row, dict):
+            raise ValueError("empirical reward row must be an object")
+        arm = round(float(row["arm"]), 3)
+        rewards = row.get("rewards")
+        if not isinstance(rewards, list) or not rewards:
+            raise ValueError("each empirical reward row must include rewards")
+        rewards_by_arm[arm] = [round(float(reward), 3) for reward in rewards]
+
+    return rewards_by_arm
+
+
+def _default_sample_catalog() -> dict[str, object]:
+    return {
+        "source": "synthetic_fallback",
+        "products": [_default_sample_product()],
+    }
 
 
 def _default_sample_product() -> dict[str, object]:
@@ -154,6 +223,21 @@ def _default_sample_product() -> dict[str, object]:
         "id": "SYN-005",
         "name": "Wool Throw",
         "observations": 365,
+        "price_arms": [35.1, 37.05, 39.0, 40.95, 42.9],
+        "empirical_rewards": [
+            {"arm": 35.1, "rewards": [245.7, 261.0, 271.8, 255.6]},
+            {"arm": 37.05, "rewards": [296.4, 289.8, 282.6, 274.2]},
+            {"arm": 39.0, "rewards": [273.0, 327.6, 300.3, 286.65]},
+            {"arm": 40.95, "rewards": [327.6, 300.3, 245.7, 286.65]},
+            {"arm": 42.9, "rewards": [257.4, 300.3, 343.2, 214.5]},
+        ],
+        "elasticity_model": {
+            "base_price": 37.05,
+            "base_demand": 8.5,
+            "elasticity": -1.05,
+            "noise_scale": 0.05,
+        },
+        "environment_source": "synthetic_fallback_generated",
     }
 
 
