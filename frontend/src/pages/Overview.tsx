@@ -172,6 +172,7 @@ export function Overview({ catalog }: OverviewProps) {
                 type="button"
                 className={metric === "cumulative_reward" ? "segment is-active" : "segment"}
                 onClick={() => setMetric("cumulative_reward")}
+                aria-pressed={metric === "cumulative_reward"}
               >
                 Revenue
               </button>
@@ -179,6 +180,7 @@ export function Overview({ catalog }: OverviewProps) {
                 type="button"
                 className={metric === "cumulative_regret" ? "segment is-active" : "segment"}
                 onClick={() => setMetric("cumulative_regret")}
+                aria-pressed={metric === "cumulative_regret"}
               >
                 Regret
               </button>

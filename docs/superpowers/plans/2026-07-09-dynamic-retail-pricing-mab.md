@@ -1058,6 +1058,11 @@ git add frontend/src
 git commit -m "feat: add overview dashboard"
 ```
 
+
+**Report**
+- Metric toggle buttons in `frontend/src/pages/Overview.tsx` now expose `aria-pressed` for active-state semantics without changing visuals.
+- Verified with `cd frontend; npm run build`.
+
 ---
 
 ### Task 9: Interactive Lab
