@@ -2,6 +2,7 @@ import { Database, RadioTower } from "lucide-react";
 import { useEffect, useState } from "react";
 import { fetchDatasets } from "./api/client";
 import { Tabs } from "./components/Tabs";
+import { Lab } from "./pages/Lab";
 import { Overview } from "./pages/Overview";
 import type { DatasetCatalog } from "./types";
 
@@ -66,25 +67,10 @@ export default function App() {
         {activeTab === "overview" ? (
           <Overview catalog={catalog} />
         ) : (
-          <section className="lab-placeholder">
-            <div className="dashboard-panel">
-              <div className="panel-topline">
-                <div>
-                  <p className="panel-kicker">Lab route intact</p>
-                  <h2>Interactive experimentation stays in Task 9</h2>
-                </div>
-                <span className={isLoading ? "status-badge is-loading" : "status-badge"}>
-                  {isLoading ? "Loading datasets" : catalog.source}
-                </span>
-              </div>
-              <p className="section-intro">
-                The tab remains wired so the scaffold can expand into controls and reruns later.
-                This task only implements the Overview surface.
-              </p>
-            </div>
-          </section>
+          <Lab catalog={catalog} />
         )}
       </main>
     </div>
   );
 }
+
