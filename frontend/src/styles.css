@@ -399,6 +399,38 @@ select {
   color: #8d1c1c;
 }
 
+.overview-loading-state {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 12px;
+  padding: 18px;
+  border-radius: 8px;
+  border: 1px solid #d4dde8;
+  background: rgba(255, 255, 255, 0.9);
+  color: #425161;
+  margin-top: 18px;
+}
+
+.overview-loading-state h2,
+.overview-loading-state p {
+  margin: 0;
+}
+
+.overview-loading-state p {
+  margin-top: 4px;
+  color: #5f6b7a;
+}
+
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (max-width: 900px) {
   .app-header {
     flex-direction: column;
@@ -432,3 +464,4 @@ select {
     grid-auto-flow: row;
   }
 }
+

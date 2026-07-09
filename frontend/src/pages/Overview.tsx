@@ -1,15 +1,6 @@
-import {
-  AlertCircle,
-  ArrowUpRight,
-  BadgeDollarSign,
-  Database,
-  LineChart,
-  Sparkles,
-  Target,
-} from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { AlertCircle, ArrowUpRight, BadgeDollarSign, Database, LineChart, Loader2, Sparkles, Target } from "lucide-react";
+import { useEffect, useState } from "react";
 import { fetchPrecomputed } from "../api/client";
-import { precomputedFixture } from "../api/fixtures";
 import { RevenueRegretChart } from "../charts/RevenueRegretChart";
 import { KpiCard } from "../components/KpiCard";
 import { StrategyTable } from "../components/StrategyTable";
@@ -33,7 +24,7 @@ function findBaseline(summary: SummaryRow[]) {
 }
 
 export function Overview({ catalog }: OverviewProps) {
-  const [precomputed, setPrecomputed] = useState<PrecomputedResponse>(precomputedFixture);
+  const [precomputed, setPrecomputed] = useState<PrecomputedResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [metric, setMetric] = useState<ChartMetric>("cumulative_reward");
@@ -68,46 +59,6 @@ export function Overview({ catalog }: OverviewProps) {
     };
   }, []);
 
-  const sampleProduct = precomputed.sample_product;
-  const summaries = precomputed.overview.summaries;
-
-  const {
-    winner,
-    baseline,
-    revenueLift,
-    revenueLiftPct,
-    regretReduction,
-    regretReductionPct,
-  } = useMemo(() => {
-    const ordered = [...summaries].sort(
-      (left, right) => right.cumulative_reward - left.cumulative_reward,
-    );
-    const lead = ordered[0];
-    const baselineRow = findBaseline(ordered);
-    const rewardDelta = lead.cumulative_reward - baselineRow.cumulative_reward;
-    const regretDelta = baselineRow.cumulative_regret - lead.cumulative_regret;
-
-    return {
-      winner: lead,
-      baseline: baselineRow,
-      revenueLift: rewardDelta,
-      revenueLiftPct:
-        baselineRow.cumulative_reward === 0
-          ? 0
-          : (rewardDelta / baselineRow.cumulative_reward) * 100,
-      regretReduction: regretDelta,
-      regretReductionPct:
-        baselineRow.cumulative_regret === 0
-          ? 0
-          : (regretDelta / baselineRow.cumulative_regret) * 100,
-    };
-  }, [summaries]);
-
-  const datasetCount = catalog.source === "loading" ? "Loading catalog" : catalog.products.length;
-  const priceArmRange = `${Math.min(...sampleProduct.price_arms).toFixed(0)} to ${Math.max(
-    ...sampleProduct.price_arms,
-  ).toFixed(0)}`;
-
   if (errorMessage) {
     return (
       <section className="overview-empty-state" aria-live="polite">
@@ -119,6 +70,38 @@ export function Overview({ catalog }: OverviewProps) {
       </section>
     );
   }
+
+  if (isLoading || precomputed === null) {
+    return (
+      <section className="overview-loading-state" aria-live="polite" aria-busy="true">
+        <Loader2 size={18} className="loading-spinner" aria-hidden="true" />
+        <div>
+          <h2>Loading overview</h2>
+          <p>Fetching the real precomputed response before showing the dashboard.</p>
+        </div>
+      </section>
+    );
+  }
+
+  const sampleProduct = precomputed.sample_product;
+  const summaries = precomputed.overview.summaries;
+
+  const ordered = [...summaries].sort(
+    (left, right) => right.cumulative_reward - left.cumulative_reward,
+  );
+  const winner = ordered[0];
+  const baseline = findBaseline(ordered);
+  const revenueLift = winner.cumulative_reward - baseline.cumulative_reward;
+  const regretReduction = baseline.cumulative_regret - winner.cumulative_regret;
+  const revenueLiftPct =
+    baseline.cumulative_reward === 0 ? 0 : (revenueLift / baseline.cumulative_reward) * 100;
+  const regretReductionPct =
+    baseline.cumulative_regret === 0 ? 0 : (regretReduction / baseline.cumulative_regret) * 100;
+
+  const datasetCount = catalog.source === "loading" ? "Loading catalog" : catalog.products.length;
+  const priceArmRange = `${Math.min(...sampleProduct.price_arms).toFixed(0)} to ${Math.max(
+    ...sampleProduct.price_arms,
+  ).toFixed(0)}`;
 
   return (
     <section className="overview-page">
@@ -305,3 +288,4 @@ export function Overview({ catalog }: OverviewProps) {
     </section>
   );
 }
+
