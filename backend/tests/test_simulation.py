@@ -35,3 +35,21 @@ def test_run_simulation_is_deterministic_for_same_seed():
     )
 
     assert first == second
+
+
+def test_run_simulation_supports_oracle_algorithm_and_zero_regret():
+    env = EmpiricalArmEnvironment({1.0: [3.0], 2.0: [5.0]}, seed=4)
+
+    result = run_simulation(
+        environment=env,
+        algorithms=["oracle"],
+        horizon=6,
+        seed=11,
+    )
+
+    assert len(result.traces) == 6
+    assert result.summary[0].algorithm == "oracle"
+    assert result.summary[0].best_arm == 2.0
+    assert result.summary[0].cumulative_regret == 0.0
+    assert all(row.arm == 2.0 for row in result.traces)
+    assert all(row.cumulative_regret == 0.0 for row in result.traces)

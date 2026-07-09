@@ -48,11 +48,14 @@ def run_simulation(
     summary: list[SummaryRow] = []
 
     for index, algorithm in enumerate(config.algorithms):
+        policy_params = dict((config.parameters or {}).get(algorithm, {}))
+        if algorithm == "oracle" and "best_arm" not in policy_params:
+            policy_params["best_arm"] = best_arm
         policy = make_policy(
             algorithm,
             arms=list(environment.arms),
             seed=config.seed + index,
-            **((config.parameters or {}).get(algorithm, {})),
+            **policy_params,
         )
         policy_environment = copy.deepcopy(environment)
         cumulative_reward = 0.0
