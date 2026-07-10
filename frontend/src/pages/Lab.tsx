@@ -10,19 +10,16 @@ import {
   areLabSettingsEqual,
   buildExperimentRequest,
   DEFAULT_LAB_SETTINGS,
+  findBaseline,
   formatAlgorithmName,
   type LabSettings,
   normalizeLabSettings,
 } from "../lab";
-import type { DatasetCatalog, ExperimentResponse, SummaryRow } from "../types";
+import type { DatasetCatalog, ExperimentResponse } from "../types";
 
 type LabProps = {
   catalog: DatasetCatalog;
 };
-
-function findBaseline(summary: SummaryRow[]) {
-  return summary.find((row) => row.algorithm === "epsilon_greedy") ?? summary[0];
-}
 
 export function Lab({ catalog }: LabProps) {
   const [settings, setSettings] = useState<LabSettings>(DEFAULT_LAB_SETTINGS);

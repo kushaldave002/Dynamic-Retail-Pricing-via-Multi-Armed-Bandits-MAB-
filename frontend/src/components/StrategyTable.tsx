@@ -1,15 +1,9 @@
+import { formatAlgorithmName } from "../lab";
 import type { SummaryRow } from "../types";
 
 type StrategyTableProps = {
   summary: SummaryRow[];
 };
-
-function formatAlgorithmName(algorithm: string) {
-  return algorithm
-    .split("_")
-    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-    .join(" ");
-}
 
 export function StrategyTable({ summary }: StrategyTableProps) {
   const sorted = [...summary].sort((left, right) => right.cumulative_reward - left.cumulative_reward);

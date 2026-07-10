@@ -8,26 +8,13 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { ALGORITHM_COLORS, formatAlgorithmName } from "../lab";
 import type { TraceRow } from "../types";
 
 type Props = {
   traces: TraceRow[];
   metric: "cumulative_reward" | "cumulative_regret";
 };
-
-const ALGORITHM_COLORS: Record<string, string> = {
-  epsilon_greedy: "#d97706",
-  ucb1: "#0891b2",
-  sliding_window_ucb: "#0f766e",
-  thompson_sampling: "#15803d",
-};
-
-function formatAlgorithmName(algorithm: string) {
-  return algorithm
-    .split("_")
-    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-    .join(" ");
-}
 
 export function RevenueRegretChart({ traces, metric }: Props) {
   const grouped = traces.reduce<Record<number, Record<string, number | string>>>((acc, row) => {

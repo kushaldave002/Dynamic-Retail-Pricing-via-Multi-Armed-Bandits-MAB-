@@ -8,23 +8,10 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { ALGORITHM_COLORS, formatAlgorithmName } from "../lab";
 import type { TraceRow } from "../types";
 
-const ALGORITHM_COLORS: Record<string, string> = {
-  epsilon_greedy: "#d97706",
-  ucb1: "#0891b2",
-  sliding_window_ucb: "#0f766e",
-  thompson_sampling: "#15803d",
-};
-
 const ROLLING_WINDOW = 10;
-
-function formatAlgorithmName(algorithm: string) {
-  return algorithm
-    .split("_")
-    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-    .join(" ");
-}
 
 export function RewardTrendChart({ traces }: { traces: TraceRow[] }) {
   const grouped = traces.reduce<Record<string, TraceRow[]>>((acc, row) => {

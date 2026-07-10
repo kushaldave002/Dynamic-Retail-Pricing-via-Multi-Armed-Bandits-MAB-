@@ -8,16 +8,10 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { formatAlgorithmName } from "../lab";
 import type { TraceRow } from "../types";
 
 const ARM_COLORS = ["#0f766e", "#0891b2", "#15803d", "#d97706", "#7c3aed"];
-
-function formatAlgorithmName(algorithm: string) {
-  return algorithm
-    .split("_")
-    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-    .join(" ");
-}
 
 export function ArmShareChart({ traces }: { traces: TraceRow[] }) {
   const algorithmNames = Array.from(new Set(traces.map((trace) => trace.algorithm)));
