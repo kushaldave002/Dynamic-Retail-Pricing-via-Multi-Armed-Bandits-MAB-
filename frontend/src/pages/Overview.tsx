@@ -84,7 +84,13 @@ export function Overview({ catalog }: OverviewProps) {
   }
 
   const sampleProduct = precomputed.sample_product;
-  const summaries = precomputed.overview.summaries;
+  const overviewEnvironment = precomputed.lab_defaults.environment;
+  const summaries = precomputed.overview.summaries.filter(
+    (row) => row.environment === overviewEnvironment,
+  );
+  const overviewTraces = precomputed.overview.traces.filter(
+    (row) => row.environment === overviewEnvironment,
+  );
 
   const ordered = [...summaries].sort(
     (left, right) => right.cumulative_reward - left.cumulative_reward,
@@ -186,7 +192,7 @@ export function Overview({ catalog }: OverviewProps) {
               </button>
             </div>
           </div>
-          <RevenueRegretChart traces={precomputed.overview.traces} metric={metric} />
+          <RevenueRegretChart traces={overviewTraces} metric={metric} />
           <p className="panel-note">
             {metric === "cumulative_reward"
               ? "Higher is better. Teal and green traces should separate quickly if a policy exploits strong arms efficiently."
