@@ -13,6 +13,7 @@ from pipelines.clean_data import (
     clean_transactions,
     select_sample_products,
 )
+from experiments.run_experiment import build_precomputed_results
 from pipelines.make_sample import build_sample_payload
 
 
@@ -100,7 +101,7 @@ def test_download_uci_online_retail_prefers_existing_local_file(monkeypatch):
         shutil.rmtree(raw_dir, ignore_errors=True)
 
 
-def test_build_sample_payload_uses_local_raw_data_when_provided():
+def test_build_sample_payload_uses_local_raw_data_when_provided(monkeypatch):
     scratch_root = Path("tests") / "_tmp"
     raw_dir = scratch_root / f"sample-local-raw-{uuid.uuid4().hex}"
     output_dir = scratch_root / f"sample-local-output-{uuid.uuid4().hex}"
@@ -146,15 +147,19 @@ def test_build_sample_payload_uses_local_raw_data_when_provided():
 
         build_sample_payload(output_dir, raw_dir=raw_dir)
 
-        catalog = json.loads((output_dir / "catalog.json").read_text(encoding="utf-8"))
-        results = json.loads((output_dir / "precomputed_results.json").read_text(encoding="utf-8"))
+        catalog_path = output_dir / "catalog.json"
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
 
         assert catalog["source"] == "uci_online_retail_local"
         assert catalog["products"][0]["id"] == "R-001"
         assert catalog["products"][0]["empirical_rewards"]
         assert catalog["products"][0]["elasticity_model"]["base_price"] > 0
-        assert results["products"][0]["id"] == "R-001"
-        assert results["products"][0]["name"] == "Real Mug"
+
+        monkeypatch.setattr("experiments.run_experiment._CATALOG_PATH", catalog_path)
+        precomputed = build_precomputed_results(seed=1, horizon=8)
+
+        assert precomputed["sample_product"]["id"] == "R-001"
+        assert precomputed["sample_product"]["name"] == "Real Mug"
     finally:
         shutil.rmtree(raw_dir, ignore_errors=True)
         shutil.rmtree(output_dir, ignore_errors=True)
@@ -173,23 +178,21 @@ def test_build_sample_payload_falls_back_to_synthetic_when_download_fails(monkey
         build_sample_payload(output_dir, raw_dir=raw_dir, allow_download=True)
 
         catalog_path = output_dir / "catalog.json"
-        results_path = output_dir / "precomputed_results.json"
 
         assert catalog_path.exists()
-        assert results_path.exists()
         assert catalog_path.stat().st_size < 20_000
-        assert results_path.stat().st_size < 200_000
 
         catalog = json.loads(catalog_path.read_text())
-        results = json.loads(results_path.read_text())
 
         assert catalog["source"] == "synthetic_fallback"
         assert catalog["products"]
         assert catalog["products"][0]["empirical_rewards"]
         assert catalog["products"][0]["elasticity_model"]["noise_scale"] == 0.05
-        assert results["products"]
-        assert results["products"][0]["id"].startswith("SYN-")
-        assert {"empirical", "elasticity"} <= set(results["products"][0]["environments"])
+
+        monkeypatch.setattr("experiments.run_experiment._CATALOG_PATH", catalog_path)
+        precomputed = build_precomputed_results(seed=1, horizon=8)
+
+        assert precomputed["sample_product"]["id"].startswith("SYN-")
     finally:
         shutil.rmtree(output_dir, ignore_errors=True)
         shutil.rmtree(raw_dir, ignore_errors=True)
