@@ -4,24 +4,14 @@ import { fetchPrecomputed } from "../api/client";
 import { RevenueRegretChart } from "../charts/RevenueRegretChart";
 import { KpiCard } from "../components/KpiCard";
 import { StrategyTable } from "../components/StrategyTable";
-import type { DatasetCatalog, PrecomputedResponse, SummaryRow } from "../types";
+import { findBaseline, formatAlgorithmName } from "../lab";
+import type { DatasetCatalog, PrecomputedResponse } from "../types";
 
 type OverviewProps = {
   catalog: DatasetCatalog;
 };
 
 type ChartMetric = "cumulative_reward" | "cumulative_regret";
-
-function formatAlgorithmName(algorithm: string) {
-  return algorithm
-    .split("_")
-    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-    .join(" ");
-}
-
-function findBaseline(summary: SummaryRow[]) {
-  return summary.find((row) => row.algorithm === "epsilon_greedy") ?? summary[0];
-}
 
 export function Overview({ catalog }: OverviewProps) {
   const [precomputed, setPrecomputed] = useState<PrecomputedResponse | null>(null);
@@ -91,6 +81,18 @@ export function Overview({ catalog }: OverviewProps) {
   const overviewTraces = precomputed.overview.traces.filter(
     (row) => row.environment === overviewEnvironment,
   );
+
+  if (summaries.length === 0) {
+    return (
+      <section className="overview-empty-state" aria-live="polite">
+        <AlertCircle size={18} aria-hidden="true" />
+        <div>
+          <h2>Overview unavailable</h2>
+          <p>No precomputed results for the {overviewEnvironment} environment.</p>
+        </div>
+      </section>
+    );
+  }
 
   const ordered = [...summaries].sort(
     (left, right) => right.cumulative_reward - left.cumulative_reward,

@@ -1,7 +1,11 @@
-import type { AlgorithmName, EnvironmentName, ExperimentRequest } from "./types";
+import type { AlgorithmName, EnvironmentName, ExperimentRequest, SummaryRow } from "./types";
+
+export const BASELINE_ALGORITHM: AlgorithmName = "epsilon_greedy";
 
 export const LAB_HORIZON_MIN = 10;
 export const LAB_HORIZON_MAX = 1000;
+export const LAB_SEED_MIN = 0;
+export const LAB_SEED_MAX = 1_000_000;
 export const LAB_EPSILON_MIN = 0.01;
 export const LAB_EPSILON_MAX = 0.5;
 export const LAB_WINDOW_MIN = 1;
@@ -51,7 +55,7 @@ export function normalizeLabSettings(settings: LabSettings): LabSettings {
       LAB_HORIZON_MIN,
       LAB_HORIZON_MAX,
     ),
-    seed: normalizeInteger(settings.seed, DEFAULT_LAB_SETTINGS.seed),
+    seed: normalizeInteger(settings.seed, DEFAULT_LAB_SETTINGS.seed, LAB_SEED_MIN, LAB_SEED_MAX),
     algorithms: Array.from(new Set(settings.algorithms)),
     epsilon: Number(clamp(settings.epsilon, LAB_EPSILON_MIN, LAB_EPSILON_MAX).toFixed(2)),
     windowSize: normalizeInteger(
@@ -80,11 +84,22 @@ export function buildExperimentRequest(settings: LabSettings): ExperimentRequest
   };
 }
 
+export const ALGORITHM_COLORS: Record<string, string> = {
+  epsilon_greedy: "#d97706",
+  ucb1: "#0891b2",
+  sliding_window_ucb: "#0f766e",
+  thompson_sampling: "#15803d",
+};
+
 export function formatAlgorithmName(algorithm: string) {
   return algorithm
     .split("_")
     .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
     .join(" ");
+}
+
+export function findBaseline(summary: SummaryRow[]) {
+  return summary.find((row) => row.algorithm === BASELINE_ALGORITHM) ?? summary[0];
 }
 
 export function areLabSettingsEqual(left: LabSettings, right: LabSettings) {

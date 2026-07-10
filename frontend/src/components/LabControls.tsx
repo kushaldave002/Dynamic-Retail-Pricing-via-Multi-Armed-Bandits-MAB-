@@ -2,6 +2,8 @@ import type { AlgorithmName } from "../types";
 import {
   LAB_HORIZON_MAX,
   LAB_HORIZON_MIN,
+  LAB_SEED_MAX,
+  LAB_SEED_MIN,
   type LabSettings,
   normalizeLabSettings,
 } from "../lab";
@@ -87,10 +89,13 @@ export function LabControls({ settings, onChange, onRun, isRunning }: LabControl
           <span>Seed</span>
           <input
             type="number"
+            min={LAB_SEED_MIN}
+            max={LAB_SEED_MAX}
             step={1}
             value={settings.seed}
             onChange={(event) => onChange(updateNumber(settings, "seed", event.target.value))}
           />
+          <small className="control-hint">{LAB_SEED_MIN} to {LAB_SEED_MAX}</small>
         </label>
 
         <label className="control-field">
