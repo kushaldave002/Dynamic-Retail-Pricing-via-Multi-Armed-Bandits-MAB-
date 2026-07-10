@@ -9,8 +9,11 @@ class EpsilonGreedy:
     name = "epsilon_greedy"
 
     def __init__(self, arms: list[Arm], seed: int = 0, epsilon: float = 0.1, **_: object) -> None:
+        coerced_epsilon = float(epsilon)
+        if not 0.0 <= coerced_epsilon <= 1.0:
+            raise ValueError("epsilon must be between 0.0 and 1.0")
         self.arms = list(arms)
-        self.epsilon = float(epsilon)
+        self.epsilon = coerced_epsilon
         self._rng = random.Random(seed)
         self._counts = {arm: 0 for arm in self.arms}
         self._values = {arm: 0.0 for arm in self.arms}

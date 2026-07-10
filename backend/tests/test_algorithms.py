@@ -67,3 +67,9 @@ def test_sliding_window_ucb_rejects_non_integral_window_size():
     with pytest.raises(ValueError, match="window_size must be an integer"):
         make_policy("sliding_window_ucb", arms=[1.0, 2.0], seed=3, window_size=2.5)
 
+
+@pytest.mark.parametrize("epsilon", [-0.1, 1.5])
+def test_epsilon_greedy_rejects_out_of_range_epsilon(epsilon):
+    with pytest.raises(ValueError, match="epsilon must be between 0.0 and 1.0"):
+        make_policy("epsilon_greedy", arms=[1.0, 2.0], seed=3, epsilon=epsilon)
+

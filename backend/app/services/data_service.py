@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from functools import lru_cache
 from pathlib import Path
 
 from experiments.run_experiment import build_precomputed_results
@@ -12,6 +13,7 @@ _CATALOG_PATH = _SAMPLES_DIR / "catalog.json"
 _PRECOMPUTED_PATH = _SAMPLES_DIR / "precomputed_results.json"
 
 
+@lru_cache(maxsize=1)
 def load_dataset_catalog() -> dict[str, object]:
     if _CATALOG_PATH.exists():
         payload = _read_json(_CATALOG_PATH)
@@ -25,6 +27,7 @@ def load_dataset_catalog() -> dict[str, object]:
     }
 
 
+@lru_cache(maxsize=1)
 def load_precomputed_results() -> dict[str, object]:
     if _PRECOMPUTED_PATH.exists():
         payload = _read_json(_PRECOMPUTED_PATH)
